@@ -29,7 +29,7 @@ check_operating_system() {
    error="\e[91m    [✘] Need to be run on a Debian-like operating system, exiting.\e[39m"
 
    if [[ -f "/etc/os-release" ]]; then
-       if [[ -z $(cat /etc/os-release | grep "ID=debian") ]] || [[ -z $(cat /etc/os-release | grep "ID_LIKE=debian") ]]; then
+       if [[ -n $(cat /etc/os-release | grep "ID=debian") ]] || [[ -n $(cat /etc/os-release | grep "ID_LIKE=debian") ]]; then
            echo -e "\e[92m    [✔] Debian-like operating system\e[39m"
        else
            echo -e "$error"
@@ -264,7 +264,7 @@ change_hostname() {
 
 install_package() {
    # Install associated packages by using aptitude.
-   if [[ $1 == "dnsmasq" || $1 == "hostapd" || $1 == "tshark" || $1 == "sqlite3" || $1 == "suricata"  || $1 == "unclutter" ]]; then
+   if [[ $1 == "swig" || $1 == "dnsmasq" || $1 == "hostapd" || $1 == "tshark" || $1 == "sqlite3" || $1 == "suricata"  || $1 == "unclutter" ]]; then
        apt-get install $1 -y
    elif [[ $1 == "zeek" ]]; then
        distrib=$(cat /etc/os-release | grep -E "^ID=" | cut -d"=" -f2)
@@ -288,7 +288,7 @@ install_package() {
        apt-get install zeek python3-venv -y
     elif [[ $1 == "node" ]]; then
        curl -sL https://deb.nodesource.com/setup_14.x | bash
-       apt-get install -y nodejs
+       apt-get install -y nodejs npm
     elif [[ $1 == "dig" ]]; then
        apt-get install -y dnsutils
     elif [[ $1 == "pip" ]]; then
@@ -300,6 +300,7 @@ check_dependencies() {
    # Check binary dependencies associated to the project.
    # If not installed, call install_package with the package name.
    bins=("/usr/sbin/hostapd"
+         "/usr/bin/swig"
          "/usr/sbin/dnsmasq"
          "/opt/zeek/bin/zeek"
          "/usr/bin/tshark"
@@ -308,7 +309,7 @@ check_dependencies() {
          "/usr/bin/unclutter"
          "/usr/bin/sqlite3"
          "/usr/bin/pip")
-
+   apt install python3-venv libssl-dev -y
    echo -e "\e[39m[+] Checking dependencies...\e[39m"
    for bin in "${bins[@]}"
    do
@@ -321,9 +322,15 @@ check_dependencies() {
    done
    install_package node
    echo -e "\e[39m[+] Install Python packages...\e[39m"
+
+   # Making use of venv
    python3 -m venv /root/menv
-   /root/menv/bin/python -m pip install -U --no-cache pip wheel
-   /root/menv/bin/python -m pip install -r "$SCRIPT_PATH/assets/requirements.txt"
+   bash -c "source ~/menv/bin/activate && \
+   pip install -U --no-cache pip wheel && \
+   pip install -r $SCRIPT_PATH/assets/requirements.txt "
+
+   #/root/menv/bin/python -m pip install -U --no-cache pip wheel
+   #/root/menv/bin/python -m pip install -r "$SCRIPT_PATH/assets/requirements.txt"
 }
 
 compile_vuejs() {
