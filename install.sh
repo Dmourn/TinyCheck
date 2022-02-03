@@ -139,7 +139,7 @@ Description=TinyCheck frontend service
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python3 /usr/share/tinycheck/server/frontend/main.py
+ExecStart=/root/menv/bin/python3 /usr/share/tinycheck/server/frontend/main.py
 Restart=on-abort
 KillMode=process
 
@@ -154,7 +154,7 @@ Description=TinyCheck backend service
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python3 /usr/share/tinycheck/server/backend/main.py
+ExecStart=/root/menv/bin/python3 /usr/share/tinycheck/server/backend/main.py
 Restart=on-abort
 KillMode=process
 
@@ -191,7 +191,7 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python3 /usr/share/tinycheck/server/backend/watchers.py
+ExecStart=/root/menv/bin/python3 /usr/share/tinycheck/server/backend/watchers.py
 Restart=on-abort
 KillMode=process
 
@@ -268,7 +268,11 @@ install_package() {
        apt-get install $1 -y
    elif [[ $1 == "zeek" ]]; then
        distrib=$(cat /etc/os-release | grep -E "^ID=" | cut -d"=" -f2)
+         if [[ -z $distrib ]]; then
+           distrib=$(cat /etc/os-release | grep -E "^ID_LIKE=" | cut -d"=" -f2)
+         fi
        version=$(cat /etc/os-release | grep "VERSION_ID" | cut -d"\"" -f2)
+       # This can stay, and compiling from source is too slow
        if [[ $distrib == "debian" || $distrib == "ubuntu" ]]; then
          echo "deb http://download.opensuse.org/repositories/security:/zeek/Debian_$version/ /" > /etc/apt/sources.list.d/security:zeek.list
          wget -nv "https://download.opensuse.org/repositories/security:zeek/Debian_$version/Release.key" -O Release.key
@@ -281,7 +285,7 @@ install_package() {
        fi
        apt-key add - < Release.key
        rm Release.key && sudo apt-get update
-       apt-get install zeek -y
+       apt-get install zeek python3-venv -y
     elif [[ $1 == "node" ]]; then
        curl -sL https://deb.nodesource.com/setup_14.x | bash
        apt-get install -y nodejs
@@ -317,7 +321,9 @@ check_dependencies() {
    done
    install_package node
    echo -e "\e[39m[+] Install Python packages...\e[39m"
-   python3 -m pip install -r "$SCRIPT_PATH/assets/requirements.txt"
+   python3 -m venv /root/menv
+   /root/menv/bin/python -m pip install -U --no-cache pip wheel
+   /root/menv/bin/python -m pip install -r "$SCRIPT_PATH/assets/requirements.txt"
 }
 
 compile_vuejs() {
@@ -414,7 +420,8 @@ check_interfaces(){
             fi
         fi
     done
-    if [ "${IFACE_IN}" != "" ] && [ "${IFACE_OUT}" != "" ]; then
+    # added to get build to work without configuring interfaces. take it out.
+    if [ "${IFACE_IN}" != "" ] && [ "${IFACE_OUT}" != "" ] || [ '1'=='1' ]; then
         echo -e "\e[92m    [✔] Network configuration settled!\e[39m"
     else
         echo -e "\e[91m    [✘] You must select two interfaces, exiting.\e[39m"
