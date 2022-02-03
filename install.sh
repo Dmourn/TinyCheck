@@ -427,8 +427,8 @@ check_interfaces(){
             fi
         fi
     done
-    # added to get build to work without configuring interfaces. take it out.
-    if [ "${IFACE_IN}" != "" ] && [ "${IFACE_OUT}" != "" ] || [ '1'=='1' ]; then
+
+    if [ "${IFACE_IN}" != "" ] && [ "${IFACE_OUT}" != "" ] ; then
         echo -e "\e[92m    [✔] Network configuration settled!\e[39m"
     else
         echo -e "\e[91m    [✘] You must select two interfaces, exiting.\e[39m"
